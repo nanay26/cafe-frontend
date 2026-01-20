@@ -17,45 +17,48 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
+// Ambil BASE URL dari environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   /**
    * Sinkron status admin dari SERVER
-   * Menambahkan cache: 'no-store' agar browser selalu meminta data terbaru
+   * Menggunakan API_URL agar mengarah ke backend di Koyeb
    */
   const refreshSession = async () => {
-  try {
-    // Panggil Next.js API route (relative path)
-    const res = await fetch('/api/admin/session', {
-      method: 'GET',
-      credentials: 'include',
-      cache: 'no-store',
-    });
-    
-    const data = await res.json();
-    setIsAdmin(data.isAdmin === true);
-  } catch (error) {
-    console.error("Session Check Error:", error);
-    setIsAdmin(false);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      // Perubahan: Menggunakan absolute path dengan API_URL
+      const res = await fetch(`${API_URL}/api/admin/session`, {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      
+      const data = await res.json();
+      setIsAdmin(data.isAdmin === true);
+    } catch (error) {
+      console.error("Session Check Error:", error);
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const logoutAdmin = async () => {
-  try {
-    // Panggil Next.js API route
-    await fetch('/api/admin/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-  } finally {
-    setIsAdmin(false);
-    window.location.href = '/admin/login'; // Frontend route
-  }
-};
+  const logoutAdmin = async () => {
+    try {
+      // Perubahan: Menggunakan absolute path dengan API_URL
+      await fetch(`${API_URL}/api/admin/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      setIsAdmin(false);
+      window.location.href = '/admin/login'; // Frontend route tetap relative
+    }
+  };
 
   /**
    * Cek session saat pertama kali aplikasi dimuat
