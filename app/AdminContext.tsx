@@ -26,38 +26,36 @@ export function AdminProvider({ children }: { children: ReactNode }) {
    * Menambahkan cache: 'no-store' agar browser selalu meminta data terbaru
    */
   const refreshSession = async () => {
-    try {
-      const res = await fetch('https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/admin/session', {
-        method: 'GET',
-        credentials: 'include',
-        cache: 'no-store', // Sangat penting agar status login tidak tersangkut cache browser
-      });
-      
-      const data = await res.json();
-      setIsAdmin(data.isAdmin === true);
-    } catch (error) {
-      console.error("Session Check Error:", error);
-      setIsAdmin(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    // Panggil Next.js API route (relative path)
+    const res = await fetch('/api/admin/session', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    
+    const data = await res.json();
+    setIsAdmin(data.isAdmin === true);
+  } catch (error) {
+    console.error("Session Check Error:", error);
+    setIsAdmin(false);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  /**
-   * Logout aman (hapus cookie di server)
-   */
-  const logoutAdmin = async () => {
-    try {
-      await fetch('https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/admin/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } finally {
-      setIsAdmin(false);
-      // Menggunakan window.location agar seluruh state aplikasi ter-reset total
-      window.location.href = 'https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/admin/login';
-    }
-  };
+const logoutAdmin = async () => {
+  try {
+    // Panggil Next.js API route
+    await fetch('/api/admin/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } finally {
+    setIsAdmin(false);
+    window.location.href = '/admin/login'; // Frontend route
+  }
+};
 
   /**
    * Cek session saat pertama kali aplikasi dimuat
