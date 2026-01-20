@@ -36,11 +36,11 @@ export default function AddMenu() {
     formData.append('category', form.category);
     formData.append('description', form.description);
     if (image) formData.append('image', image);
-
-    const res = await fetch('https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/menu/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const res = await fetch(`${API_URL}/api/menu/upload`, {
+    method: 'POST',
+    body: formData,
+  });
 
     if (res.ok) {
       alert('Menu berhasil ditambah!');
