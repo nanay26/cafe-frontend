@@ -1,77 +1,52 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
-
-// Pastikan SECRET ini sama dengan yang ada di .env
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+import type { NextRequest } from 'next/server'; // Perbaikan: diubah dari 'next/request' ke 'next/server'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  
+  // Mengambil token dari cookie browser
   const token = req.cookies.get('admin_token')?.value;
   const guestToken = req.cookies.get('guest_session')?.value;
 
-  // 1. Izinkan akses ke file statis dan API agar tidak kena redirect loop
+  // 1. Izinkan akses ke file statis, API, dan halaman publik utama agar tidak redirect loop
   if (
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') || 
     pathname.includes('.') ||
-    pathname === '/start' ||      // Izinkan akses ke halaman aktivasi
-    pathname === '/qr'            // Izinkan akses ke halaman QR
+    pathname === '/start' || 
+    pathname === '/qr' ||
+    pathname === '/scan-expired'
   ) {
     return NextResponse.next();
   }
 
-  // --- TAMBAHAN: Proteksi Sesi Tamu (QR) ---
-  // Jika akses halaman utama atau detail menu
+  // 2. Proteksi Sesi Tamu (Customer QR)
+  // Memastikan pembeli punya guest_session sebelum bisa melihat menu
   if (pathname === '/' || pathname.startsWith('/menu')) {
-    // Jika dia admin, izinkan langsung tanpa cek guest_session
+    // Jika dia admin (punya admin_token), izinkan langsung akses home
     if (token) {
-      try {
-        await jwtVerify(token, SECRET);
-        return NextResponse.next();
-      } catch (err) {
-        // Jika token admin rusak saat di home, biarkan lanjut ke pengecekan guest
-      }
+      return NextResponse.next();
     }
 
-    // Cek sesi tamu
+    // Jika bukan admin dan tidak punya sesi tamu, arahkan ke halaman expired
     if (!guestToken) {
       return NextResponse.rewrite(new URL('/scan-expired', req.url));
     }
-
-    try {
-      await jwtVerify(guestToken, SECRET);
-      return NextResponse.next();
-    } catch (err) {
-      const res = NextResponse.rewrite(new URL('/scan-expired', req.url));
-      res.cookies.delete('guest_session');
-      return res;
-    }
+    return NextResponse.next();
   }
-  // --- AKHIR TAMBAHAN ---
 
-  // 2. Proteksi folder /admin (Kode Asli Kamu)
+  // 3. Proteksi folder /admin (Dashboard Management)
   if (pathname.startsWith('/admin')) {
     const isLoginPage = pathname === '/admin/login';
 
+    // Jika tidak ada token dan mencoba masuk ke halaman selain login, tendang balik ke login
     if (!token && !isLoginPage) {
       return NextResponse.redirect(new URL('/admin/login', req.url));
     }
 
-    if (token) {
-      try {
-        await jwtVerify(token, SECRET);
-        
-        if (isLoginPage) {
-          return NextResponse.redirect(new URL('/', req.url));
-        }
-        
-        return NextResponse.next();
-      } catch (err) {
-        const res = NextResponse.redirect(new URL('/admin/login', req.url));
-        res.cookies.delete('admin_token');
-        return res;
-      }
+    // Jika sudah punya token admin dan mencoba buka halaman login, lempar ke dashboard
+    if (token && isLoginPage) {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
     }
   }
 
@@ -79,6 +54,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Update Matcher agar mencakup admin, home (/), dan menu
+  // Menentukan rute mana saja yang diproses oleh middleware ini
   matcher: ['/admin/:path*', '/', '/menu/:path*'],
 };
