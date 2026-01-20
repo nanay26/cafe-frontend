@@ -49,26 +49,34 @@ export default function SmartChatbot() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // 1. Hook Verifikasi Sesi
-  useEffect(() => {
-    const verifySession = async () => {
-      try {
-        const res = await fetch("https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/auth/check");
-        const data = await res.json();
-
-        if (data.active === false) {
-          setHasSession(false);
-        } else {
-          setHasSession(true);
-        }
-      } catch {
-        setHasSession(false);
+// 1. Hook Verifikasi Sesi
+useEffect(() => {
+  const verifySession = async () => {
+    try {
+      // PERBAIKAN: Ganti endpoint ke /api/admin/session (Koyeb)
+      const res = await fetch("https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/admin/session");
+      
+      // Jika res 404, berarti backend memang belum punya route ini
+      if (res.status === 404) {
+         console.warn("Endpoint session belum ada di backend.");
+         setHasSession(true); // Set true agar chatbot tidak hilang saat dev
+         return;
       }
-    };
 
-    verifySession();
-    const interval = setInterval(verifySession, 60000);
-    return () => clearInterval(interval);
-  }, []);
+      const data = await res.json();
+      // Sesuaikan dengan response NestJS { isAdmin: boolean }
+      setHasSession(data.isAdmin === true || data.active === true); 
+    } catch (error) {
+      console.error("Chatbot Session Error:", error);
+      // Jika error (misal koneksi), tetap tampilkan chatbot untuk tamu
+      setHasSession(true); 
+    }
+  };
+
+  verifySession();
+  const interval = setInterval(verifySession, 60000); // Ini yang menyebabkan log 404 muncul tiap menit
+  return () => clearInterval(interval);
+}, []);
 
   // 2. Hook Scroll Otomatis (Harus di atas return kondisional)
   useEffect(() => {
