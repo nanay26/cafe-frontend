@@ -7,19 +7,29 @@ export default function StartPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Di app/start/page.tsx
-const initSession = async () => {
-  try {
-    // Gunakan rute relatif jika API-nya ada di project yang sama (Frontend)
-    const res = await fetch('/api/auth/guest', { method: 'POST' }); 
-    
-    if (res.ok) {
-      router.replace('/'); 
-    }
-  } catch (error) {
-    console.error("Gagal memulai sesi");
-  }
-};
+    const initSession = async () => {
+      try {
+        const res = await fetch('https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/auth/guest', { 
+          method: 'POST',
+          // TAMBAHKAN INI: Wajib agar browser mau menyimpan cookie dari backend Koyeb
+          credentials: 'include', 
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (res.ok) {
+          // Berikan sedikit delay agar browser sempat mencatat cookie
+          setTimeout(() => {
+            router.replace('/');
+          }, 500);
+        } else {
+          console.error("Respon server tidak oke");
+        }
+      } catch (error) {
+        console.error("Gagal memulai sesi:", error);
+      }
+    };
     initSession();
   }, [router]);
 

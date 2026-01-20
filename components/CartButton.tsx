@@ -22,31 +22,28 @@ export default function CartButton() {
   }, []);
 
   // Efek untuk verifikasi Sesi
-  // Cari bagian useEffect verifikasi Sesi di CartButton.tsx
-useEffect(() => {
-  const verifySession = async () => {
-    try {
-      // PERBAIKAN: Ganti rute dari /api/auth/check menjadi /api/admin/session
-      const res = await fetch('https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/admin/session');
-      const data = await res.json();
-      
-      // Jika backend NestJS mengirim { isAdmin: true }, berarti sesi aktif
-      if (data.isAdmin === true) {
-        setHasSession(true);
-      } else {
-        // Cek juga apakah ada guest_session jika bukan admin
-        // Untuk sementara, jika bukan admin kita set true agar tombol muncul untuk customer
-        setHasSession(true); 
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+       const res = await fetch("https://psychiatric-fionnula-njbcom-d64810ed.koyeb.app/api/auth/check", {
+  credentials: "include", // PENTING: Agar cookie dikirim ke backend
+});
+        const data = await res.json();
+        
+        if (data.active === false) {
+          setHasSession(false);
+        } else {
+          setHasSession(true);
+        }
+      } catch {
+        setHasSession(false);
       }
-    } catch {
-      setHasSession(false);
-    }
-  };
+    };
 
-  verifySession();
-  const interval = setInterval(verifySession, 60000); 
-  return () => clearInterval(interval);
-}, []);
+    verifySession();
+    const interval = setInterval(verifySession, 60000); 
+    return () => clearInterval(interval);
+  }, []);
 
   // Guard return diletakkan setelah semua Hook (useState/useEffect) terpanggil
   if (!hasSession) return null;
