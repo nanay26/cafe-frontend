@@ -24,16 +24,18 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
+        // --- TAMBAHKAN INI ---
+        credentials: 'include', 
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Gagal login');
 
-      // 1. Update status di AdminContext agar Sidebar muncul
+      // Tunggu refresh session selesai agar context terupdate
       await refreshSession();
 
-      // 2. Pindah ke dashboard admin
-      router.push('/');
+      // Pindah ke dashboard admin
+      router.push('/'); // Sebaiknya arahkan ke dashboard spesifik
       router.refresh();
     } catch (err: any) {
       setError(err.message);
